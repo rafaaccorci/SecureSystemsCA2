@@ -106,14 +106,33 @@ char *message(char n) {
  */
 void sub_bytes(unsigned char *block, aes_block_size_t block_size) {
   int num_bytes = block_size_to_bytes(block_size);
-  
   for (int i = 0; i< num_bytes; i++){
     block[i] = sbox[block[i]];
   }
 }
 
 void shift_rows(unsigned char *block, aes_block_size_t block_size) {
-  // TODO: Implement me!
+  // how many bytes in a row (Dividing by 4 because that's the row lenght)
+  int row_size = block_size_to_bytes(block_size) / 4;
+  // safe copy before shifting starts
+  unsigned char temp[16];
+
+  for (int row = 0; row <4; row++) {
+    for (int position = 0; position < row_size; position++) {
+      //adding the current row to temp
+      temp[position] = block[row * row_size + position];
+    }
+
+    //adding the shifted position to temp
+    for (int position = 0; position < row_size; position ++) {
+      block[row * row_size + position] = temp[(position + row) % row_size];
+    }
+  }
+
+
+
+
+
 }
 
 void mix_columns(unsigned char *block, aes_block_size_t block_size) {
