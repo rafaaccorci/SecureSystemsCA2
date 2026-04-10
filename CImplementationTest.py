@@ -5,7 +5,7 @@ import sys
 
 sys.path.insert(0, './aes')
 
-from aes import AES, sub_bytes, inv_sub_bytes, shift_rows
+from aes import AES, sub_bytes, inv_sub_bytes, shift_rows, inv_shift_rows
 
 rijndael = ctypes.CDLL('./rijndael.so')
 
@@ -65,6 +65,23 @@ class ShiftRowsTest(unittest.TestCase):
             # python implementation
             py_block = [[original[row * 4 + col] for row in range(4)] for col in range(4)]
             shift_rows(py_block)
+            py_result = bytes([py_block[col][row] for row in range(4) for col in range(4)])
+
+            self.assertEqual(c_result, py_result)
+
+class InvShiftRowsTest(unittest.TestCase):
+    def test_shift_rows(self):
+        for _ in range(3):
+            original = random.randbytes(16)
+
+            #C implementation
+            c_block = ctypes.create_string_buffer(original)
+            rijndael.invert_shift_rows(c_block,0)
+            c_result = bytes(c_block)[:16]
+
+            # python implementation
+            py_block = [[original[row * 4 + col] for row in range(4)] for col in range(4)]
+            inv_shift_rows(py_block)
             py_result = bytes([py_block[col][row] for row in range(4) for col in range(4)])
 
             self.assertEqual(c_result, py_result)
