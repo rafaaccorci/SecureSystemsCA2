@@ -101,6 +101,14 @@ char *message(char n) {
   return output;
 }
 
+//helper function xtime (Learned about this function here https://www.usenix.org/legacy/publications/library/proceedings/cardis02/full_papers/valverde/valverde_html/node12.html)
+//0x80 is 10000000 in binary, using this as base for comparison
+unsigned char xtime(unsigned char byte) {
+  return (byte << 1) ^ ((byte & 0x80) ? 0x1b: 0x00);
+
+}
+
+
 /*
  * Operations used when encrypting a block
  */
@@ -131,7 +139,30 @@ void shift_rows(unsigned char *block, aes_block_size_t block_size) {
 }
 
 void mix_columns(unsigned char *block, aes_block_size_t block_size) {
-  // TODO: Implement me!
+
+  int row_size = block_size_to_bytes(block_size) /4;
+
+  for(int column = 0; column < row_size; column ++){
+    unsigned char top_byte = block[column];
+    unsigned char upper_middle_byte = block[column + row_size];
+    unsigned char lower_middle_byte = block[column + (row_size * 2)];
+    unsigned char bottom_byte = block[column + (row_size * 3)];
+
+    //calculating the new bytes using the xtime helper function
+    unsigned char new_top_byte = xtime(top_byte) ^ xtime(upper_middle_byte) ^ upper_middle_byte ^ lower_middle_byte ^ bottom_byte;
+    unsigned char new_upper_middle_byte = top_byte ^ xtime(upper_middle_byte) ^ xtime(lower_middle_byte) ^ lower_middle_byte ^ bottom_byte;
+    unsigned char new_lower_middle_byte = top_byte ^ upper_middle_byte ^ xtime(lower_middle_byte) ^ xtime(bottom_byte) ^ bottom_byte;
+    unsigned char new_bottom_byte = xtime(top_byte) ^ top_byte ^ upper_middle_byte ^ lower_middle_byte ^ xtime(bottom_byte);
+
+    // writting the new bytes back to the block at the same position I read them from
+
+    block[column] = new_top_byte;
+    block[column + row_size] = new_upper_middle_byte;
+    block[column + (row_size * 2)] = new_lower_middle_byte;
+    block[column + (row_size * 3)] = new_bottom_byte;
+
+
+  }
 }
 
 /*
@@ -158,7 +189,7 @@ void invert_shift_rows(unsigned char *block, aes_block_size_t block_size) {
 
     //adding the shifted position to temp
     for (int position = 0; position < row_size; position ++) {
-      //adding the row_size to avoid negative number
+      //adding the row_size to avoid negative number (the only difference between the previous function is the substraction to shift right)
       block[row * row_size + position] = temp[(position - row + row_size) % row_size];
     }
   }
