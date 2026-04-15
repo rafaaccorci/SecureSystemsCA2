@@ -197,8 +197,45 @@ void invert_shift_rows(unsigned char *block, aes_block_size_t block_size) {
 
 }
 
+
+
+// helper functions to make the the invert_mix_columns more readable
+unsigned char multiply_by_9(unsigned char byte) {
+    return xtime(xtime(xtime(byte))) ^ byte;
+}
+
+unsigned char multiply_by_11(unsigned char byte) {
+    return xtime(xtime(xtime(byte))) ^ xtime(byte) ^ byte;
+}
+
+unsigned char multiply_by_13(unsigned char byte) {
+    return xtime(xtime(xtime(byte))) ^ xtime(xtime(byte)) ^ byte;
+}
+
+unsigned char multiply_by_14(unsigned char byte) {
+    return xtime(xtime(xtime(byte))) ^ xtime(xtime(byte)) ^ xtime(byte);
+}
+
 void invert_mix_columns(unsigned char *block, aes_block_size_t block_size) {
-  // TODO: Implement me!
+  int row_size = block_size_to_bytes(block_size) / 4;
+
+  for (int column = 0; column < row_size; column ++){
+    unsigned char top_byte = block[column];
+    unsigned char upper_middle_byte = block[column + row_size];
+    unsigned char lower_middle_byte = block[column + (row_size * 2)];
+    unsigned char bottom_byte = block[column + (row_size * 3)];
+
+    unsigned char new_top_byte = multiply_by_14(top_byte) ^ multiply_by_11(upper_middle_byte) ^ multiply_by_13(lower_middle_byte) ^ multiply_by_9(bottom_byte);
+    unsigned char new_upper_middle_byte = multiply_by_9 (top_byte) ^ multiply_by_14 (upper_middle_byte) ^ multiply_by_11 (lower_middle_byte) ^ multiply_by_13(bottom_byte);
+    unsigned char new_lower_middle_byte = multiply_by_13(top_byte) ^ multiply_by_9(upper_middle_byte) ^ multiply_by_14(lower_middle_byte) ^ multiply_by_11(bottom_byte);
+    unsigned char new_bottom_byte = multiply_by_11(top_byte) ^ multiply_by_13(upper_middle_byte) ^ multiply_by_9(lower_middle_byte) ^ multiply_by_14(bottom_byte);
+
+
+    block[column] = new_top_byte;
+    block[column + row_size] = new_upper_middle_byte;
+    block[column + (row_size * 2)] = new_lower_middle_byte;
+    block[column + (row_size * 3)] = new_bottom_byte;
+  }
 }
 
 /*
