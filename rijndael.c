@@ -309,20 +309,68 @@ unsigned char *expand_key(unsigned char *cipher_key, aes_block_size_t block_size
  * The implementations of the functions declared in the
  * header file should go here
  */
-unsigned char *aes_encrypt_block(unsigned char *plaintext,
-                                 unsigned char *key,
-                                 aes_block_size_t block_size) {
-  // TODO: Implement me!
-  unsigned char *output =
-      (unsigned char *)malloc(sizeof(unsigned char) * block_size_to_bytes(block_size));
+unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key, aes_block_size_t block_size) {
+   unsigned char *output = (unsigned char *)malloc(sizeof(unsigned char) * block_size_to_bytes(block_size));
+
+   int number_of_bytes = block_size_to_bytes(block_size);
+
+   unsigned char *expanded_key = expand_key(key, block_size);
+
+   memcpy(output, plaintext, number_of_bytes);
+   
+   add_round_key(output, expanded_key, block_size);
+
+   for(int counter = 1; counter < 10; counter ++ ){
+
+    unsigned char *current_round_key  = expanded_key + (counter * 16);
+    sub_bytes(output, block_size);
+    shift_rows(output, block_size);
+    mix_columns(output, block_size);
+    add_round_key(output, current_round_key, block_size);
+   }
+
+   // final (10th) round of encryption
+   sub_bytes(output, block_size);
+   shift_rows(output, block_size);
+   add_round_key(output, expanded_key + (10 * 16), block_size);
+
+  // free the memory space after it's no longer needed
+  free(expanded_key);
+  //final encrypted output
   return output;
 }
 
-unsigned char *aes_decrypt_block(unsigned char *ciphertext,
-                                 unsigned char *key,
-                                 aes_block_size_t block_size) {
-  // TODO: Implement me!
-  unsigned char *output =
-      (unsigned char *)malloc(sizeof(unsigned char) * block_size_to_bytes(block_size));
+unsigned char *aes_decrypt_block(unsigned char *ciphertext, unsigned char *key, aes_block_size_t block_size) {
+  unsigned char *output = (unsigned char *)malloc(sizeof(unsigned char) * block_size_to_bytes(block_size));
+   int number_of_bytes = block_size_to_bytes(block_size);
+
+   unsigned char *expanded_key = expand_key(key, block_size);
+
+   memcpy(output, ciphertext, number_of_bytes);
+   add_round_key(output, expanded_key + (10 * 16), block_size);
+
+   for(int counter = 9; counter > 0; counter --){
+
+    unsigned char *current_round_key = expanded_key + (counter * 16);
+
+    
+    invert_shift_rows(output, block_size);
+    invert_sub_bytes(output, block_size);
+    add_round_key(output, current_round_key, block_size);
+    invert_mix_columns(output, block_size);
+    
+   }
+
+  // final (10th or 0) round of decryption
+
+  invert_shift_rows(output, block_size);
+  invert_sub_bytes(output, block_size);
+  add_round_key(output, expanded_key, block_size);
+  
+  //freeing memory
+
+  free(expanded_key);
+
+
   return output;
 }
