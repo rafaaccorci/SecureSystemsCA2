@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-// TODO: Any other files you need to include should go here
 
 #include "rijndael.h"
 
@@ -73,6 +72,13 @@ static const unsigned char inv_sbox [256] = {
     0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D
 };
 
+// array to be used in the expand_key function
+static const unsigned char rcon[32] = {
+    0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40,
+    0x80, 0x1B, 0x36, 0x6C, 0xD8, 0xAB, 0x4D, 0x9A,
+    0x2F, 0x5E, 0xBC, 0x63, 0xC6, 0x97, 0x35, 0x6A,
+    0xD4, 0xB3, 0x7D, 0xFA, 0xEF, 0xC5, 0x91, 0x39,
+};
 unsigned char block_access(unsigned char *block, size_t row, size_t col, aes_block_size_t block_size) {
   int row_len;
   switch (block_size) {
@@ -241,10 +247,14 @@ void invert_mix_columns(unsigned char *block, aes_block_size_t block_size) {
 /*
  * This operation is shared between encryption and decryption
  */
-void add_round_key(unsigned char *block, 
-                   unsigned char *round_key,
-                   aes_block_size_t block_size) {
-  // TODO: Implement me!
+void add_round_key(unsigned char *block, unsigned char *round_key, aes_block_size_t block_size) {
+  int number_of_bytes = block_size_to_bytes(block_size);
+
+  for (int current_position = 0; current_position < number_of_bytes; current_position ++){
+    block[current_position] = block[current_position] ^ round_key[current_position];
+
+  }
+
 }
 
 /*
@@ -253,9 +263,47 @@ void add_round_key(unsigned char *block,
  * vector, containing the 11 round keys one after the other
  */
 unsigned char *expand_key(unsigned char *cipher_key, aes_block_size_t block_size) {
-  // TODO: Implement me!
-  return 0;
-}
+  unsigned char *expanded_key = (unsigned char *)malloc(176 * sizeof(unsigned char));
+  unsigned char current_word [4];
+  memcpy(expanded_key, cipher_key, 16);
+  int rcon_index = 1;
+  //the index starts at 4 because 0-3 is the original key
+  for(int current_word_position = 4; current_word_position < 44; current_word_position++){
+    // checking if the currennt position is a multiple of 4
+    if (current_word_position % 4 == 0){
+      memcpy(current_word, expanded_key + (current_word_position - 1) * 4, 4);
+      //rotating left by 1
+      unsigned char first_byte = current_word[0];
+      current_word[0] = current_word[1];
+      current_word[1] = current_word[2];
+      current_word[2] = current_word[3];
+      current_word[3] = first_byte;
+
+      //
+      for(int i = 0; i < 4; i++){
+        current_word[i] = sbox[current_word[i]];
+        }
+      current_word[0] ^= rcon[rcon_index];
+      //XORing each byte of the current word
+      for(int i = 0; i < 4; i++){
+        current_word[i] ^= expanded_key[(current_word_position -4) * 4 +i];
+        }
+      rcon_index++;
+      }
+      else{
+        memcpy(current_word, expanded_key + (current_word_position - 1)*4,4);
+        for(int i = 0; i <4; i ++){
+          current_word[i] ^= expanded_key[(current_word_position -4) *4 +i];
+        }
+
+      }
+    memcpy(expanded_key + current_word_position * 4, current_word,4);
+    }
+    return expanded_key;
+  }
+
+  
+
 
 /*
  * The implementations of the functions declared in the
