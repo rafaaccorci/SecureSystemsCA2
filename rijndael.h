@@ -1,6 +1,9 @@
 /*
- * TODO: Add your name and student number here, along with
- *       a brief description of this code.
+ Rafael Accorci D24128728
+ 
+ This file containst the public interface of the AES implemenatation.
+
+ It declares two main public functions which are the entry point to anyone using the library
  */
 
 #ifndef RIJNDAEL_H

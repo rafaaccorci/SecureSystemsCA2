@@ -1,9 +1,9 @@
 /*
-  Rafael Accorci
-  
-  D24128728
- * TODO: Add your name and student number here, along with
- *       a brief description of this code.
+  Rafael Accorci D24128728
+
+  This code is a implementation of AES as a C library, it contains all the necessary functions to encrypt and
+  decrypt a 128 bits array. This is due that the library only supports 128, 192 and 256 bits
+
  */
 
 #include <stdio.h>
